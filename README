@@ -1,0 +1,4 @@
+These are some things that I've made while dicking around with libclang.
+
+cursor_info.cc:
+This is a program which descends through every node of the clang ast and spits out some information about them.  I use this to sort of figure out what it is that I want to know about Cursors.
