@@ -32,21 +32,6 @@ std::string str_time(time_t t) {
 }
 
 /*
-CXString clang_getClangVersion(void);
-CXString clang_getFileName(CXFile SFile);
-CXString clang_getTypeSpelling(CXType CT);
-CXString clang_getTypeKindSpelling(enum CXTypeKind K);
-CXString clang_getCursorKindSpelling(enum CXCursorKind Kind);
-
-CXString clang_getCursorUSR(CXCursor);
-CXString clang_getCursorSpelling(CXCursor);
-CXString clang_getCursorDisplayName(CXCursor);
-CXString clang_Cursor_getRawCommentText(CXCursor C);
-CXString clang_Cursor_getBriefCommentText(CXCursor C);
-CXString clang_Cursor_getMangling(CXCursor);
-*/
-
-/*
  * string conversions
  */
 
@@ -101,48 +86,37 @@ std::string cursor_attribute_CustomId(CXCursor cursor) {
     return new_id;
   }
 }
-
 std::string cursor_attribute_TypeSpelling(CXCursor cursor) {
   return convert_cxstring(clang_getTypeSpelling(clang_getCursorType(cursor)));
 }
-
 std::string cursor_attribute_TypeKindSpelling(CXCursor cursor) {
   return convert_cxstring(
       clang_getTypeKindSpelling(clang_getCursorType(cursor).kind));
 }
-
 std::string cursor_attribute_CursorUSR(CXCursor cursor) {
   return convert_cxstring(clang_getCursorUSR(cursor));
 }
-
 std::string cursor_attribute_CursorSpelling(CXCursor cursor) {
   return convert_cxstring(clang_getCursorSpelling(cursor));
 }
-
 std::string cursor_attribute_CursorDisplayName(CXCursor cursor) {
   return convert_cxstring(clang_getCursorDisplayName(cursor));
 }
-
 std::string cursor_attribute_CursorKindSpelling(CXCursor cursor) {
   return convert_cxstring(clang_getCursorKindSpelling(cursor.kind));
 }
-
 std::string cursor_attribute_RawCommentText(CXCursor cursor) {
   return convert_cxstring(clang_Cursor_getRawCommentText(cursor));
 }
-
 std::string cursor_attribute_BriefCommentText(CXCursor cursor) {
   return convert_cxstring(clang_Cursor_getBriefCommentText(cursor));
 }
-
 std::string cursor_attribute_Mangling(CXCursor cursor) {
   return convert_cxstring(clang_Cursor_getMangling(cursor));
 }
-
 std::string cursor_attribute_location(CXCursor cursor) {
   return string_location(clang_getCursorLocation(cursor));
 }
-
 std::string cursor_attribute_SemanticParent(CXCursor cursor) {
   CXCursor next = clang_getCursorSemanticParent(cursor);
   if (!clang_Cursor_isNull(next)) {
@@ -151,7 +125,6 @@ std::string cursor_attribute_SemanticParent(CXCursor cursor) {
     return "-1";
   }
 }
-
 std::string cursor_attribute_LexicalParent(CXCursor cursor) {
   CXCursor next = clang_getCursorLexicalParent(cursor);
   if (!clang_Cursor_isNull(next)) {
@@ -160,7 +133,6 @@ std::string cursor_attribute_LexicalParent(CXCursor cursor) {
     return "-1";
   }
 }
-
 std::string cursor_attribute_Referenced(CXCursor cursor) {
   CXCursor next = clang_getCursorReferenced(cursor);
   if (!clang_Cursor_isNull(next)) {
@@ -169,7 +141,6 @@ std::string cursor_attribute_Referenced(CXCursor cursor) {
     return "-1";
   }
 }
-
 std::string cursor_attribute_Definition(CXCursor cursor) {
   CXCursor next = clang_getCursorDefinition(cursor);
   if (!clang_Cursor_isNull(next)) {
@@ -178,7 +149,6 @@ std::string cursor_attribute_Definition(CXCursor cursor) {
     return "-1";
   }
 }
-
 std::string cursor_attribute_CanonicalCursor(CXCursor cursor) {
   CXCursor next = clang_getCanonicalCursor(cursor);
   if (!clang_Cursor_isNull(next)) {
@@ -187,13 +157,302 @@ std::string cursor_attribute_CanonicalCursor(CXCursor cursor) {
     return "-1";
   }
 }
-
 std::string cursor_attribute_SpecializedCursorTemplate(CXCursor cursor) {
   CXCursor next = clang_getSpecializedCursorTemplate(cursor);
   if (!clang_Cursor_isNull(next)) {
     return cursor_attribute_CustomId(next);
   } else {
     return "-1";
+  }
+}
+
+/*
+ * cursor predicates
+ */
+std::string cursor_predicate_hasAttributes(CXCursor cursor) {
+  if (clang_Cursor_hasAttrs(cursor)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isInSystemHeader(CXCursor cursor) {
+  CXSourceLocation location = clang_getCursorLocation(cursor);
+  if (clang_Location_isInSystemHeader(location)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isFromMainFile(CXCursor cursor) {
+  CXSourceLocation location = clang_getCursorLocation(cursor);
+  if (clang_Location_isFromMainFile(location)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isDeclaration(CXCursor cursor) {
+  if (clang_isDeclaration(cursor.kind)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isReference(CXCursor cursor) {
+  if (clang_isReference(cursor.kind)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isExpression(CXCursor cursor) {
+  if (clang_isExpression(cursor.kind)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isStatement(CXCursor cursor) {
+  if (clang_isStatement(cursor.kind)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isAttribute(CXCursor cursor) {
+  if (clang_isAttribute(cursor.kind)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isInvalid(CXCursor cursor) {
+  if (clang_isInvalid(cursor.kind)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isTranslationUnit(CXCursor cursor) {
+  if (clang_isTranslationUnit(cursor.kind)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isPreprocessing(CXCursor cursor) {
+  if (clang_isPreprocessing(cursor.kind)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isUnexposed(CXCursor cursor) {
+  if (clang_isUnexposed(cursor.kind)) {
+    return "T";
+  }
+  return "F";
+}
+
+//
+std::string cursor_predicate_isMacroFunctionLike(CXCursor cursor) {
+  if (clang_Cursor_isMacroFunctionLike(cursor)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isMacroBuiltin(CXCursor cursor) {
+  if (clang_Cursor_isMacroBuiltin(cursor)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isFunctionInlined(CXCursor cursor) {
+  if (clang_Cursor_isFunctionInlined(cursor)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isBitField(CXCursor cursor) {
+  if (clang_Cursor_isBitField(cursor)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isDynamicCall(CXCursor cursor) {
+  if (clang_Cursor_isDynamicCall(cursor)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isVariadic(CXCursor cursor) {
+  if (clang_Cursor_isVariadic(cursor)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isConvertingConstructor(CXCursor cursor) {
+  if (clang_CXXConstructor_isConvertingConstructor(cursor)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isCopyConstructor(CXCursor cursor) {
+  if (clang_CXXConstructor_isCopyConstructor(cursor)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isDefaultConstructor(CXCursor cursor) {
+  if (clang_CXXConstructor_isDefaultConstructor(cursor)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isMoveConstructor(CXCursor cursor) {
+  if (clang_CXXConstructor_isMoveConstructor(cursor)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isMutable(CXCursor cursor) {
+  if (clang_CXXField_isMutable(cursor)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isDefaulted(CXCursor cursor) {
+  if (clang_CXXMethod_isDefaulted(cursor)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isCursorDefinition(CXCursor cursor) {
+  if (clang_isCursorDefinition(cursor)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isPureVirtual(CXCursor cursor) {
+  if (clang_CXXMethod_isPureVirtual(cursor)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isStatic(CXCursor cursor) {
+  if (clang_CXXMethod_isStatic(cursor)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isVirtual(CXCursor cursor) {
+  if (clang_CXXMethod_isVirtual(cursor)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isVirtualBase(CXCursor cursor) {
+  if (clang_isVirtualBase(cursor)) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isConst(CXCursor cursor) {
+  if (clang_CXXMethod_isConst(cursor)) {
+    return "T";
+  }
+  return "F";
+}
+
+std::string cursor_attribute_getClassType(CXCursor cursor) {
+  return convert_cxstring(clang_getTypeSpelling(
+      clang_Type_getClassType(clang_getCursorType(cursor))));
+}
+std::string cursor_attribute_getNamedType(CXCursor cursor) {
+  return convert_cxstring(clang_getTypeSpelling(
+      clang_Type_getNamedType(clang_getCursorType(cursor))));
+}
+
+std::string cursor_predicate_isConstQualifiedType(CXCursor cursor) {
+  if (clang_isConstQualifiedType(clang_getCursorType(cursor))) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isVolatileQualifiedType(CXCursor cursor) {
+  if (clang_isVolatileQualifiedType(clang_getCursorType(cursor))) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isRestrictQualifiedType(CXCursor cursor) {
+  if (clang_isRestrictQualifiedType(clang_getCursorType(cursor))) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isFunctionTypeVariadic(CXCursor cursor) {
+  if (clang_isFunctionTypeVariadic(clang_getCursorType(cursor))) {
+    return "T";
+  }
+  return "F";
+}
+std::string cursor_predicate_isPODType(CXCursor cursor) {
+  if (clang_isPODType(clang_getCursorType(cursor))) {
+    return "T";
+  }
+  return "F";
+}
+
+std::string cursor_attribute_getAlignOf(CXCursor cursor) {
+  return std::to_string(clang_Type_getAlignOf(clang_getCursorType(cursor)));
+}
+std::string cursor_attribute_getSizeOf(CXCursor cursor) {
+  return std::to_string(clang_Type_getSizeOf(clang_getCursorType(cursor)));
+}
+
+std::string cursor_attribute_getNumArguments(CXCursor cursor) {
+  return std::to_string(clang_Cursor_getNumArguments(cursor));
+}
+
+std::string cursor_attribute_getNumTemplateArguments(CXCursor cursor) {
+  return std::to_string(clang_Cursor_getNumTemplateArguments(cursor));
+}
+
+std::string cursor_attribute_getCXXRefQualifier(CXCursor cursor) {
+  switch (clang_Type_getCXXRefQualifier(clang_getCursorType(cursor))) {
+  case CXRefQualifier_None: {
+    return "None";
+  } break;
+  case CXRefQualifier_LValue: {
+    return "LValue";
+  } break;
+  case CXRefQualifier_RValue: {
+    return "RValue";
+  } break;
+  default:
+    return "fail";
+  }
+}
+
+std::string cursor_attribute_getStorageClass(CXCursor cursor) {
+  switch (clang_Cursor_getStorageClass(cursor)) {
+  case CX_SC_Invalid: {
+    return "Invalid,";
+  } break;
+  case CX_SC_None: {
+    return "None,";
+  } break;
+  case CX_SC_Extern: {
+    return "Extern,";
+  } break;
+  case CX_SC_Static: {
+    return "Static,";
+  } break;
+  case CX_SC_PrivateExtern: {
+    return "PrivateExtern,";
+  } break;
+  case CX_SC_OpenCLWorkGroupLocal: {
+    return "OpenCLWorkGroupLocal,";
+  } break;
+  case CX_SC_Auto: {
+    return "Auto,";
+  } break;
+  case CX_SC_Register: {
+    return "Register";
+  } break;
+  default:
+    return "fail";
   }
 }
 
@@ -216,7 +475,52 @@ AttributeMap cursor_attribute_map = {
     {"Referenced", cursor_attribute_Referenced},
     {"Definition", cursor_attribute_Definition},
     {"CanonicalCursor", cursor_attribute_CanonicalCursor},
-    {"SpecializedCursorTemplate", cursor_attribute_SpecializedCursorTemplate}};
+    {"SpecializedCursorTemplate", cursor_attribute_SpecializedCursorTemplate},
+    // TODO need to add to the help menu, first do other TODOs
+    {"hasAttributes", cursor_predicate_hasAttributes},
+    {"isInSystemHeader", cursor_predicate_isInSystemHeader},
+    {"isFromMainFile", cursor_predicate_isFromMainFile},
+    {"isDeclaration", cursor_predicate_isDeclaration},
+    {"isReference", cursor_predicate_isReference},
+    {"isExpression", cursor_predicate_isExpression},
+    {"isStatement", cursor_predicate_isStatement},
+    {"isAttribute", cursor_predicate_isAttribute},
+    {"isInvalid", cursor_predicate_isInvalid},
+    {"isTranslationUnit", cursor_predicate_isTranslationUnit},
+    {"isPreprocessing", cursor_predicate_isPreprocessing},
+    {"isUnexposed", cursor_predicate_isUnexposed},
+    //
+    {"isMacroFunctionLike", cursor_predicate_isMacroFunctionLike},
+    {"isMacroBuiltin", cursor_predicate_isMacroBuiltin},
+    {"isFunctionInlined", cursor_predicate_isFunctionInlined},
+    {"isBitField", cursor_predicate_isBitField},
+    {"isDynamicCall", cursor_predicate_isDynamicCall},
+    {"isVariadic", cursor_predicate_isVariadic},
+    {"isConvertingConstructor", cursor_predicate_isConvertingConstructor},
+    {"isCopyConstructor", cursor_predicate_isCopyConstructor},
+    {"isDefaultConstructor", cursor_predicate_isDefaultConstructor},
+    {"isMoveConstructor", cursor_predicate_isMoveConstructor},
+    {"isMutable", cursor_predicate_isMutable},
+    {"isDefaulted", cursor_predicate_isDefaulted},
+    {"isCursorDefinition", cursor_predicate_isCursorDefinition},
+    {"isPureVirtual", cursor_predicate_isPureVirtual},
+    {"isStatic", cursor_predicate_isStatic},
+    {"isVirtual", cursor_predicate_isVirtual},
+    {"isVirtualBase", cursor_predicate_isVirtualBase},
+    {"isConst", cursor_predicate_isConst},
+    {"ClassType", cursor_attribute_getClassType},
+    {"NamedType", cursor_attribute_getNamedType},
+    {"isConstQualifiedType", cursor_predicate_isConstQualifiedType},
+    {"isVolatileQualifiedType", cursor_predicate_isVolatileQualifiedType},
+    {"isRestrictQualifiedType", cursor_predicate_isRestrictQualifiedType},
+    {"isFunctionTypeVariadic", cursor_predicate_isFunctionTypeVariadic},
+    {"isPODType", cursor_predicate_isPODType},
+    {"AlignOf", cursor_attribute_getAlignOf},
+    {"SizeOf", cursor_attribute_getSizeOf},
+    {"NumTemplateArguments", cursor_attribute_getNumTemplateArguments},
+    {"NumArguments", cursor_attribute_getNumArguments},
+    {"CXXRefQualifier", cursor_attribute_getCXXRefQualifier},
+    {"StorageClass", cursor_attribute_getStorageClass}};
 
 void add_data_from_map(const std::list<std::string> &chosen_attributes,
                        std::string &result, CXCursor cursor,
@@ -270,12 +574,16 @@ int main(int argc, char *argv[]) {
   Options options;
   try {
     if (!parse_options(options, attribute_list, argc, argv)) {
-      cout << Options::help(argv[0]) << endl;
-      //cout << options.dump() << "\n\n" << endl;
+      std::string name = argv[0];
+      // cout << "fuu: " + name << endl;
+      cout << Options::help(name) << endl;
+      // cout << options.dump() << "\n\n" << endl;
       return 1;
     }
-  } catch (...) {
-    //cout << options.dump() << "\n\n" << endl;
+  } catch (const std::length_error &e) {
+    cout << e.what() << endl;
+    // cout << Options::help(argv[0]) << endl;
+    return 1;
   }
   cout << options.dump() << "\n\n" << endl;
 

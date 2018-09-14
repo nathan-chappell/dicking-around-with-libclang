@@ -5,4 +5,8 @@ COMP = $(CPP) $^ $(CPPFLAGS) -o $@
 cxcursor_info : cxcursor_info.o parse_cxcursor_info_options.o
 	$(COMP)
 
+test : test.o
+	$(COMP)
 
+test2 : test2.o
+	$(COMP)

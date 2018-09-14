@@ -1,6 +1,7 @@
 // parse_options.cc
 
 #include "parse_cxcursor_info_options.h"
+#include <iostream>
 
 std::string newlines_on_size(const std::string &str, size_t width) {
   std::string result;
@@ -41,27 +42,73 @@ std::list<OptionTriple> option_list = {
     {"-o", "--omit", "only display the collect information about "
                      "attributes not indicated in the options"}};
 
-std::list<std::pair<std::string, std::string>> supported_attributes = {
-    {"-cid", "--custom-id"},
-    {"-ts", "--type-spelling"},
-    {"-tks", "--type-kind-spelling"},
-    {"-usr", "--cursor-usr"},
-    {"-sp", "--cursor-spelling"},
-    {"-dn", "--cursor-display-name"},
-    {"-cks", "--cursor-kind-spelling"},
-    {"-rct", "--raw-comment-text"},
-    {"-bct", "--brief-comment-text"},
-    /*
-     * {"-mng", "--mangling"}
-     * causes seg fault, probably because it's not trying hard enough
-     */
+struct SupportedAttributeTriple {
+  std::string short_opt;
+  std::string attribute_key;
+};
+
+std::list<SupportedAttributeTriple> supported_attributes = {
+    {"-cid", "--CustomId"},
+    {"-ts", "--TypeSpelling"},
+    {"-tks", "--TypeKindSpelling"},
+    {"-usr", "--CursorUSR"},
+    {"-spl", "--CursorSpelling"},
+    {"-dn", "--CursorDisplayName"},
+    {"-cks", "--CursorKindSpelling"},
+    {"-rct", "--RawCommentText"},
+    {"-bct", "--BriefCommentText"},
     {"-loc", "--location"},
-    {"-sp", "--semantic-parent"},
-    {"-lp", "--lexical-parent"},
-    {"-ref", "--referenced"},
-    {"-def", "--definition"},
-    {"-can", "--canonical-cursor"},
-    {"-sct", "--specialized-cursor-template"}};
+    {"-sp", "--SemanticParent"},
+    {"-lp", "--LexicalParent"},
+    {"-ref", "--Referenced"},
+    {"-def", "--Definition"},
+    {"-can", "--CanonicalCursor"},
+    {"-sct", "--SpecializedCursorTemplate"},
+
+    {"-ha", "--hasAttributes"},
+    {"-pish", "--isInSystemHeader"},
+    {"-pfmf", "--isFromMainFile"},
+    {"-pdec", "--isDeclaration"},
+    {"-pref", "--isReference"},
+    {"-pexp", "--isExpression"},
+    {"-pst", "--isStatement"},
+    {"-patt", "--isAttribute"},
+    {"-pinv", "--isInvalid"},
+    {"-ptu", "--isTranslationUnit"},
+    {"-ppre", "--isPreprocessing"},
+    {"-punx", "--isUnexposed"},
+    {"-pmfl", "--isMacroFunctionLike"},
+    {"-pmb", "--isMacroBuiltin"},
+    {"-pfni", "--isFunctionInlined"},
+    {"-pbf", "--isBitField"},
+    {"-pdyn", "--isDynamicCall"},
+    {"-pvdc", "--isVariadic"},
+    {"-pcnc", "--isConvertingConstructor"},
+    {"-pcpc", "--isCopyConstructor"},
+    {"-pdfc", "--isDefaultConstructor"},
+    {"-pmvc", "--isMoveConstructor"},
+    {"-pmut", "--isMutable"},
+    {"-pdfl", "--isDefaulted"},
+    {"-pcdf", "--isCursorDefinition"},
+    {"-ppv", "--isPureVirtual"},
+    {"-pstc", "--isStatic"},
+    {"-pvtl", "--isVirtual"},
+    {"-pvb", "--isVirtualBase"},
+    {"-pcon", "--isConst"},
+    {"-cls", "--ClassType"},
+    {"-ntp", "--NamedType"},
+    {"-pcqt", "--isConstQualifiedType"},
+    {"-pvqt", "--isVolatileQualifiedType"},
+    {"-prqt", "--isRestrictQualifiedType"},
+    {"-pftv", "--isFunctionTypeVariadic"},
+    {"-ppod", "--isPODType"},
+    {"-paln", "--AlignOf"},
+    {"-psiz", "--SizeOf"},
+    {"-pnta", "--NumTemplateArguments"},
+    {"-pna", "--NumArguments"},
+    {"-prfq", "--CXXRefQualifier"},
+    {"-sto", "--StorageClass"}
+};
 
 Options::Options() : recurse(false), line(0), col(0) {}
 
@@ -72,11 +119,14 @@ std::string Options::help(const std::string &name) {
     result += "\n";
   }
   result += "\n  Supported CXCursor attributes:\n\n";
+  std::string line;
+  line.reserve(100);
   for (auto &&sa : supported_attributes) {
-    result += "  " + sa.first + "\t" + sa.second + "\n";
+    result += "  " + sa.short_opt + "\t  " + sa.attribute_key + "\n";
   }
   result += "\n\nExamples:\n\n";
-  result += "./cxcursor_info -r -ref -ts -tks -cid -sp -loc -L 12 1 -f test2.cc\n";
+  result +=
+      "./cxcursor_info -r -ref -ts -tks -cid -sp -loc -L 12 1 -f test2.cc\n";
   return result;
 }
 
@@ -132,54 +182,11 @@ std::list<std::string> get_message_split(const OptionTriple &triple) {
   return result;
 }
 
-std::string get_attribute_from_option(const std::string &option) {
-  if (option == "-cid" || option == "--custom-id") {
-    return "CustomId";
-  }
-  if (option == "-ts" || option == "--type-spelling") {
-    return "TypeSpelling";
-  }
-  if (option == "-tks" || option == "--type-kind-spelling") {
-    return "TypeKindSpelling";
-  }
-  if (option == "-usr" || option == "--cursor-usr") {
-    return "CursorUSR";
-  }
-  if (option == "-sp" || option == "--cursor-spelling") {
-    return "CursorSpelling";
-  }
-  if (option == "-dn" || option == "--cursor-display-name") {
-    return "CursorDisplayName";
-  }
-  if (option == "-cks" || option == "--cursor-kind-spelling") {
-    return "CursorKindSpelling";
-  }
-  if (option == "-rct" || option == "--raw-comment-text") {
-    return "RawCommentText";
-  }
-  if (option == "-bct" || option == "--brief-comment-text") {
-    return "BriefCommentText";
-  }
-  if (option == "-loc" || option == "--location") {
-    return "location";
-  }
-  if (option == "-sp" || option == "--semantic-parent") {
-    return "SemanticParent";
-  }
-  if (option == "-lp" || option == "--lexical-parent") {
-    return "LexicalParent";
-  }
-  if (option == "-ref" || option == "--referenced") {
-    return "Referenced";
-  }
-  if (option == "-def" || option == "--definition") {
-    return "Definition";
-  }
-  if (option == "-can" || option == "--canonical-cursor") {
-    return "CanonicalCursor";
-  }
-  if (option == "-sct" || option == "--specialized-cursor-template") {
-    return "SpecializedCursorTemplate";
+std::string get_attribute_key_from_option(const std::string &option) {
+  for (auto &&sa : supported_attributes) { 
+    if (option == sa.short_opt || option == sa.attribute_key) {
+      return sa.attribute_key;
+    }
   }
   return "";
 }
@@ -192,12 +199,19 @@ void add_opt_line(std::string &help, const OptionTriple &triple) {
   }
 }
 
+/*
+ * TODO fucked up
+ */
 bool parse_options(Options &options,
                    const std::list<std::string> &attribute_list, int argc,
                    char *argv[]) {
   bool have_source = false;
+  bool custom_attributes = false;
   bool invert = false;
   std::string arg;
+  if (argc < 2) {
+    return false;
+  }
   for (int i = 1; i < argc; ++i) {
     arg = argv[i];
     if (arg == "-r" || arg == "--recurse") {
@@ -217,12 +231,16 @@ bool parse_options(Options &options,
       options.source = argv[i];
       have_source = true;
     } else {
-      std::string attribute = get_attribute_from_option(arg);
+      std::string attribute = get_attribute_key_from_option(arg);
       if (attribute.empty()) {
         return false;
       }
+      custom_attributes = true;
       options.chosen_attributes.push_back(attribute);
     }
+  }
+  if (!custom_attributes) {
+    options.chosen_attributes = attribute_list;
   }
   if (invert) {
     std::list<std::string> inverted;
@@ -234,6 +252,7 @@ bool parse_options(Options &options,
     }
     options.chosen_attributes = inverted;
   }
+  options.chosen_attributes.sort();
   return have_source;
 }
 
