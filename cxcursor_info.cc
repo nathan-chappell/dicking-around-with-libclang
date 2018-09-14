@@ -10,7 +10,9 @@
  * information you would probably ever need that libclang provides.  There are a
  * few specific queries I have left out to make it a little easier to implement
  * things.  See the help or look in the parse_cxcursor_info_options.cc file to
- * see what commands do what.  
+ * see what commands do what.  Oh yea, I specifically had problems with the name
+ * mangling api, it would just seg fault.  It's probably my fault, but I don't
+ * care enough to fix it for now.
  *
  * Note: this thing has not been built for
  * efficiency, and has not yet been tested on a large program!  That is not the
@@ -20,7 +22,9 @@
  * you.  It is basically for doing research on the cursors and AST to learn
  * about it, and provide a potentially useful set of procedures to collect
  * information with, but this program is not itself designed for any scale
- * analysis.  */
+ * analysis.  
+ *
+ * */
 
 using namespace std;
 using AttributeMap = std::unordered_map<std::string, std::string (*)(CXCursor)>;
@@ -486,7 +490,6 @@ std::string cursor_attribute_getStorageClass(CXCursor cursor) {
  * function above.
  */
 AttributeMap cursor_attribute_map = {
-    // straight up attributes
     {"CustomId", cursor_attribute_CustomId},
     {"TypeSpelling", cursor_attribute_TypeSpelling},
     {"TypeKindSpelling", cursor_attribute_TypeKindSpelling},
@@ -496,16 +499,13 @@ AttributeMap cursor_attribute_map = {
     {"CursorKindSpelling", cursor_attribute_CursorKindSpelling},
     {"RawCommentText", cursor_attribute_RawCommentText},
     {"BriefCommentText", cursor_attribute_BriefCommentText},
-    //{"Mangling", cursor_attribute_Mangling},
     {"location", cursor_attribute_location},
-    // cursor references
     {"SemanticParent", cursor_attribute_SemanticParent},
     {"LexicalParent", cursor_attribute_LexicalParent},
     {"Referenced", cursor_attribute_Referenced},
     {"Definition", cursor_attribute_Definition},
     {"CanonicalCursor", cursor_attribute_CanonicalCursor},
     {"SpecializedCursorTemplate", cursor_attribute_SpecializedCursorTemplate},
-    // TODO need to add to the help menu, first do other TODOs
     {"hasAttributes", cursor_predicate_hasAttributes},
     {"isInSystemHeader", cursor_predicate_isInSystemHeader},
     {"isFromMainFile", cursor_predicate_isFromMainFile},
