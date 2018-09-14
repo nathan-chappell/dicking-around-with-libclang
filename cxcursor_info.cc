@@ -6,9 +6,26 @@
 #include <iostream>
 #include <list>
 
+/* This provides a basic command line interface to get all the cursor
+ * information you would probably ever need that libclang provides.  There are a
+ * few specific queries I have left out to make it a little easier to implement
+ * things.  See the help or look in the parse_cxcursor_info_options.cc file to
+ * see what commands do what.  
+ *
+ * Note: this thing has not been built for
+ * efficiency, and has not yet been tested on a large program!  That is not the
+ * intended use of this thing anyways, the purpose is to build some simple
+ * example programs to show the type of program you would like to eventually
+ * analyze, and see what the cursors have to say about the things that interest
+ * you.  It is basically for doing research on the cursors and AST to learn
+ * about it, and provide a potentially useful set of procedures to collect
+ * information with, but this program is not itself designed for any scale
+ * analysis.  */
+
 using namespace std;
 using AttributeMap = std::unordered_map<std::string, std::string (*)(CXCursor)>;
 
+/// Helper functions...
 std::size_t get_offset(std::size_t size, std::size_t align = 30) {
   return align > size ? align - size : 0;
 }
@@ -30,10 +47,6 @@ std::string str_time(time_t t) {
   buffer[llimit] = 0;
   return buffer;
 }
-
-/*
- * string conversions
- */
 
 std::string string_ClangVersion(void) {
   return convert_cxstring(clang_getClangVersion());
@@ -57,9 +70,12 @@ std::string string_location(CXSourceLocation location) {
            to_string(col);
   }
 }
+/// End Helper functions
 
 /*
- * Maintain a table of unique ids for each cursor
+ * Maintain a table of unique ids for each cursor.
+ * This is used for cross referencing different cursors (e.g. when a cursor is
+ * defined by another).
  */
 struct CursorHash {
   size_t operator()(CXCursor cursor) const { return clang_hashCursor(cursor); }
@@ -74,7 +90,16 @@ static std::unordered_map<CXCursor, std::string, CursorHash, CursorEqual>
     id_table;
 
 /*
- * cursor attributes
+ * The cursor information is provided by "attributes" and "predicates."
+ *
+ * All functions which retrieve attributes are prefixed by cursor_attribute_ and
+ * then a descriptive name.  All attribute retrieving functions take a CXCursor
+ * as an argument, and return a string.
+ *
+ * All functions which answer a predicate query are prefixed by
+ * cursor_predicate_ and a descriptive name.  All predicate functions take a
+ * CXCursor as an argument, and return a string of either "T" * or "F"
+ * indicating true or false, repsectively.
  */
 std::string cursor_attribute_CustomId(CXCursor cursor) {
   auto it = id_table.find(cursor);
@@ -456,6 +481,10 @@ std::string cursor_attribute_getStorageClass(CXCursor cursor) {
   }
 }
 
+/*
+ * This map refers attribute (or predicate) names to the value retrieving
+ * function above.
+ */
 AttributeMap cursor_attribute_map = {
     // straight up attributes
     {"CustomId", cursor_attribute_CustomId},
@@ -521,6 +550,14 @@ AttributeMap cursor_attribute_map = {
     {"NumArguments", cursor_attribute_getNumArguments},
     {"CXXRefQualifier", cursor_attribute_getCXXRefQualifier},
     {"StorageClass", cursor_attribute_getStorageClass}};
+
+/*
+ * The rest of the code is just implementing a CXCursorVisitor to visit the
+ * indicated nodes and get the information you want.  This involves getting some
+ * information from the arguments passed in, potentially getting the cursor
+ * corresponding to a location, and building a fairly large string to dump to
+ * the std::cout.
+ */
 
 void add_data_from_map(const std::list<std::string> &chosen_attributes,
                        std::string &result, CXCursor cursor,

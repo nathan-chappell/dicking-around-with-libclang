@@ -64,7 +64,6 @@ std::list<SupportedAttributeTriple> supported_attributes = {
     {"-def", "--Definition"},
     {"-can", "--CanonicalCursor"},
     {"-sct", "--SpecializedCursorTemplate"},
-
     {"-ha", "--hasAttributes"},
     {"-pish", "--isInSystemHeader"},
     {"-pfmf", "--isFromMainFile"},
@@ -199,9 +198,6 @@ void add_opt_line(std::string &help, const OptionTriple &triple) {
   }
 }
 
-/*
- * TODO fucked up
- */
 bool parse_options(Options &options,
                    const std::list<std::string> &attribute_list, int argc,
                    char *argv[]) {

@@ -6,6 +6,10 @@
 #include <unordered_map>
 #include <string>
 
+/*
+ * See cxcursor_info.cc for more detailed commentary
+ */
+
 std::string convert_cxstring(CXString);
 
 std::string convert_cxstring(CXString cxstring);
@@ -85,7 +89,5 @@ std::string cursor_attribute_getNumTemplateArguments(CXCursor cursor);
 std::string cursor_attribute_getCXXRefQualifier(CXCursor cursor);
 std::string cursor_attribute_getStorageClass(CXCursor cursor);
 
-
-enum CX_StorageClass clang_Cursor_getStorageClass(CXCursor);
 
 std::string string_attributes(CXCursor cursor, int indent = 0);
