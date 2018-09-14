@@ -22,7 +22,7 @@
  * you.  It is basically for doing research on the cursors and AST to learn
  * about it, and provide a potentially useful set of procedures to collect
  * information with, but this program is not itself designed for any scale
- * analysis.  
+ * analysis.
  *
  * */
 
@@ -457,25 +457,25 @@ std::string cursor_attribute_getCXXRefQualifier(CXCursor cursor) {
 std::string cursor_attribute_getStorageClass(CXCursor cursor) {
   switch (clang_Cursor_getStorageClass(cursor)) {
   case CX_SC_Invalid: {
-    return "Invalid,";
+    return "Invalid";
   } break;
   case CX_SC_None: {
-    return "None,";
+    return "None";
   } break;
   case CX_SC_Extern: {
-    return "Extern,";
+    return "Extern";
   } break;
   case CX_SC_Static: {
-    return "Static,";
+    return "Static";
   } break;
   case CX_SC_PrivateExtern: {
-    return "PrivateExtern,";
+    return "PrivateExtern";
   } break;
   case CX_SC_OpenCLWorkGroupLocal: {
-    return "OpenCLWorkGroupLocal,";
+    return "OpenCLWorkGroupLocal";
   } break;
   case CX_SC_Auto: {
-    return "Auto,";
+    return "Auto";
   } break;
   case CX_SC_Register: {
     return "Register";
@@ -559,13 +559,40 @@ AttributeMap cursor_attribute_map = {
  * the std::cout.
  */
 
-void add_data_from_map(const std::list<std::string> &chosen_attributes,
-                       std::string &result, CXCursor cursor,
-                       const std::string &string_indent) {
-  for (auto &&attribute : chosen_attributes) {
+bool is_predicate(const std::string &attribute) {
+  return attribute.substr(0,2) == "is" || attribute.substr(0,3) == "has";
+}
+
+bool meaningless_attribute(const std::string &value) {
+  return value == "" || value == "None" || value == "fail" ||
+         value == "null cxstring" || value == "-1";
+}
+
+bool meaningless_predicate(const std::string &attribute, const std::string &value) {
+  return is_predicate(attribute) && value == "F";
+}
+
+std::pair<bool, std::string>
+get_meaningful_attribute(const std::string &attribute, CXCursor cursor) {
+  std::string value = cursor_attribute_map[attribute](cursor);
+  // check for predicate
+  if (meaningless_attribute(value) || meaningless_predicate(attribute, value)) {
+    return {false, std::move(value)};
+  }
+  return {true, std::move(value)};
+}
+
+void add_data_from_map(const Options &options, std::string &result,
+                       CXCursor cursor, const std::string &string_indent) {
+  for (auto &&attribute : options.chosen_attributes) {
     // cout << &attribute << endl;
     if (cursor_attribute_map.find(attribute) == cursor_attribute_map.end()) {
       std::cerr << "unknown attribute in the mix" << endl;
+      continue;
+    }
+    std::pair<bool, std::string> meaningful_value =
+        get_meaningful_attribute(attribute, cursor);
+    if (!options.verbose && !meaningful_value.first) {
       continue;
     }
     std::string middle_space =
@@ -581,8 +608,7 @@ std::string string_attributes(CXCursor cursor,
   std::string result(indent, '_');
   result += '\n';
   std::string string_indent(indent, ' ');
-  add_data_from_map(options_i->first.chosen_attributes, result, cursor,
-                    string_indent);
+  add_data_from_map(options_i->first, result, cursor, string_indent);
   return result;
 }
 

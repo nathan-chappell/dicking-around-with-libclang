@@ -39,6 +39,8 @@ std::string usage =
 std::list<OptionTriple> option_list = {
     {"-r", "--recurse",
      "when a cursor is found to examine, recurse into its subtree"},
+    {"-v", "--verbose",
+     "display failed predicates and empty attributes"},
     {"-o", "--omit", "only display the collect information about "
                      "attributes not indicated in the options"}};
 
@@ -109,7 +111,7 @@ std::list<SupportedAttributeTriple> supported_attributes = {
     {"-sto", "--StorageClass"}
 };
 
-Options::Options() : recurse(false), line(0), col(0) {}
+Options::Options() : recurse(false), verbose(false), line(0), col(0) {}
 
 std::string Options::help(const std::string &name) {
   std::string result = "Usage" + name + usage + "\n\n";
@@ -214,7 +216,9 @@ bool parse_options(Options &options,
       options.recurse = true;
     } else if (arg == "-o" || arg == "--omit") {
       invert = true;
-    } else if (arg == "-L") {
+    } else if (arg == "-v" || arg == "--verbose") {
+      options.verbose = true;
+    }else if (arg == "-L") {
       if (i + 2 >= argc) {
         return false;
       }
