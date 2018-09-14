@@ -1,4 +1,6 @@
 These are some things that I've made while dicking around with libclang.
 
-cursor_info.cc:
-This is a program which descends through every node of the clang ast and spits out some information about them.  I use this to sort of figure out what it is that I want to know about Cursors.
+Dependencies: libclang.  The makefile assumes that they are in the places they get put when you apt install libclang.  If this doesn't apply to you, make sure that it knows how to find the includes and libclang.so.
+
+cxcursor_info.cc:
+This is a program which descends through nodes of the clang ast and spits out some information about them.  I use this to sort of figure out what it is that I want to know about Cursors.
