@@ -1,6 +1,7 @@
 // cxcursor_info.cc
 
 #include "cxcursor_info.h"
+#include "parse_cxcursor_info_options.h"
 
 #include <iostream>
 #include <list>
@@ -73,28 +74,29 @@ std::string string_location(CXSourceLocation location) {
 }
 
 /*
+ * Maintain a table of unique ids for each cursor
+ */
+struct CursorHash {
+  size_t operator()(CXCursor cursor) const { return clang_hashCursor(cursor); }
+};
+struct CursorEqual {
+  size_t operator()(CXCursor lhs, CXCursor rhs) const {
+    return clang_equalCursors(lhs, rhs);
+  }
+};
+static std::size_t custom_uid = 0;
+static std::unordered_map<CXCursor, std::string, CursorHash, CursorEqual>
+    id_table;
+
+/*
  * cursor attributes
  */
 std::string cursor_attribute_CustomId(CXCursor cursor) {
-  struct CursorHash {
-    size_t operator()(CXCursor cursor) const {
-      return clang_hashCursor(cursor);
-    }
-  };
-  struct CursorEqual {
-    size_t operator()(CXCursor lhs, CXCursor rhs) const {
-      return clang_equalCursors(lhs, rhs);
-    }
-  };
-  static std::size_t id = 0;
-  static std::unordered_map<CXCursor, std::string, CursorHash, CursorEqual>
-      id_table;
-
   auto it = id_table.find(cursor);
   if (it != id_table.end()) {
     return it->second;
   } else {
-    std::string new_id = to_string(++id);
+    std::string new_id = to_string(++custom_uid);
     id_table[cursor] = new_id;
     return new_id;
   }
@@ -196,6 +198,7 @@ std::string cursor_attribute_SpecializedCursorTemplate(CXCursor cursor) {
 }
 
 AttributeMap cursor_attribute_map = {
+    // straight up attributes
     {"CustomId", cursor_attribute_CustomId},
     {"TypeSpelling", cursor_attribute_TypeSpelling},
     {"TypeKindSpelling", cursor_attribute_TypeKindSpelling},
@@ -206,9 +209,8 @@ AttributeMap cursor_attribute_map = {
     {"RawCommentText", cursor_attribute_RawCommentText},
     {"BriefCommentText", cursor_attribute_BriefCommentText},
     //{"Mangling", cursor_attribute_Mangling},
-    {"location", cursor_attribute_location}};
-
-AttributeMap cursor_reference_map = {
+    {"location", cursor_attribute_location},
+    // cursor references
     {"SemanticParent", cursor_attribute_SemanticParent},
     {"LexicalParent", cursor_attribute_LexicalParent},
     {"Referenced", cursor_attribute_Referenced},
@@ -216,27 +218,30 @@ AttributeMap cursor_reference_map = {
     {"CanonicalCursor", cursor_attribute_CanonicalCursor},
     {"SpecializedCursorTemplate", cursor_attribute_SpecializedCursorTemplate}};
 
-std::list<AttributeMap *> attribute_maps = {&cursor_attribute_map,
-                                            &cursor_reference_map};
-
-void add_data_from_map(AttributeMap &attribute_map, std::string &result,
-                       CXCursor cursor, const std::string &string_indent) {
-  for (auto &&attribute : attribute_map) {
+void add_data_from_map(const std::list<std::string> &chosen_attributes,
+                       std::string &result, CXCursor cursor,
+                       const std::string &string_indent) {
+  for (auto &&attribute : chosen_attributes) {
     // cout << &attribute << endl;
+    if (cursor_attribute_map.find(attribute) == cursor_attribute_map.end()) {
+      std::cerr << "unknown attribute in the mix" << endl;
+      continue;
+    }
     std::string middle_space =
-        std::string(get_offset(attribute.first.size() + 1), ' ');
-    result += string_indent + "\"" + attribute.first + "\":" + middle_space +
-              "\"" + attribute.second(cursor) + "\"\n";
+        std::string(get_offset(attribute.size() + 1), ' ');
+    result += string_indent + "\"" + attribute + "\":" + middle_space + "\"" +
+              cursor_attribute_map[attribute](cursor) + "\",\n";
   }
 }
 
-std::string string_attribute(CXCursor cursor, int indent = 0) {
+std::string string_attributes(CXCursor cursor,
+                              std::pair<Options, int> *options_i) {
+  size_t indent = options_i->second;
   std::string result(indent, '_');
   result += '\n';
   std::string string_indent(indent, ' ');
-  for (auto &&attribute_map : attribute_maps) {
-    add_data_from_map(*attribute_map, result, cursor, string_indent);
-  }
+  add_data_from_map(options_i->first.chosen_attributes, result, cursor,
+                    string_indent);
   return result;
 }
 
@@ -246,33 +251,54 @@ const string hline = "----------------------------------------";
 
 CXChildVisitResult subtree_attribute(CXCursor cursor, CXCursor,
                                      CXClientData data) {
-  int *i = (int *)data;
-  *i += 2;
-  cout << string_attribute(cursor, *i) << hline << endl;
-  // cout << string_attribute(cursor) << hline << endl;
+  pair<Options, int> *options_i = (pair<Options, int> *)data;
+  options_i->second += 2;
+  cout << string_attributes(cursor, options_i) << hline << endl;
+  // cout << string_attributes(cursor) << hline << endl;
   clang_visitChildren(cursor, subtree_attribute, data);
-  *i -= 2;
+  options_i->second -= 2;
   return CXChildVisit_Continue;
 }
 
 int main(int argc, char *argv[]) {
-  if (argc < 4) {
-    cout << "enter file, line, column" << endl;
-    return 1;
+
+  std::list<std::string> attribute_list;
+  for (auto &&attribute : cursor_attribute_map) {
+    attribute_list.push_back(attribute.first);
   }
-  unsigned line = stoul(argv[2]);
-  unsigned col = stoul(argv[3]);
+
+  Options options;
+  try {
+    if (!parse_options(options, attribute_list, argc, argv)) {
+      cout << Options::help(argv[0]) << endl;
+      //cout << options.dump() << "\n\n" << endl;
+      return 1;
+    }
+  } catch (...) {
+    //cout << options.dump() << "\n\n" << endl;
+  }
+  cout << options.dump() << "\n\n" << endl;
 
   CXIndex index = clang_createIndex(0, 0);
   CXTranslationUnit TU = clang_createTranslationUnitFromSourceFile(
-      index, argv[1], 0, nullptr, 0, nullptr);
-  CXFile cxfile = clang_getFile(TU, argv[1]);
-  CXSourceLocation location = clang_getLocation(TU, cxfile, line, col);
-  CXCursor cursor = clang_getCursor(TU, location);
+      index, options.source.c_str(), 0, nullptr, 0, nullptr);
+  CXCursor cursor;
 
-  cout << string_attribute(cursor) << hline << endl;
+  if (options.line == 0) {
+    cout << "getting whole thing" << endl;
+    cursor = clang_getTranslationUnitCursor(TU);
+  } else {
+    CXFile cxfile = clang_getFile(TU, options.source.c_str());
+    CXSourceLocation location =
+        clang_getLocation(TU, cxfile, options.line, options.col);
+    cout << "cxlocation: " << string_location(location) << endl;
+    cursor = clang_getCursor(TU, location);
+  }
+
   int i = 2;
-  clang_visitChildren(cursor, subtree_attribute, &i);
+  pair<Options, int> data{options, i};
+  cout << string_attributes(cursor, &data) << hline << endl;
+  clang_visitChildren(cursor, subtree_attribute, &data);
 
   clang_disposeTranslationUnit(TU);
   clang_disposeIndex(index);
